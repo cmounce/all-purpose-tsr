@@ -10,11 +10,9 @@
 ; other TSRs in memory. This pseudorandom ID is how our TSR identifies itself.
 section .data
 tsr_id:
-    begin_wstring
-    .contents:
+    begin_wstring .length, .contents
         ; First bytes of SHA-256 hash: "Quantum's all-purpose ZZT initializer"
         db 88, 175, 157, 250, 178, 228, 109, 45
-    .length equ 8
     end_wstring
 
 
@@ -317,16 +315,9 @@ install_and_terminate:
     call concat_wstring
     append_empty_wstring
 
-    ; Copy installer to global buffer.
-    ; This is to guarantee that the installation code will be located in
-    ; memory at a location where it won't accidentally overwrite itself.
-    mov si, finalize_install
-    call concat_wstring
-
-    ; Call installer
-    pop ax              ; AL = TSR multiplex ID
-    lea bx, [di + 2]    ; BX = start of install code
-    jmp bx
+    ; Bundle assembled: install it.
+    pop ax                  ; AL = TSR multiplex ID
+    jmp finalize_install
 
 
 ; Install code: Overwrite in-memory code with buffer and terminate
@@ -338,7 +329,19 @@ install_and_terminate:
 ;   2. Code for video interrupt handler
 ;   3. Code for TSR multiplex handler
 finalize_install:
-begin_wstring
+    ; Copy function body to stack.
+    ; This is to guarantee that the installation code will be located in
+    ; memory at a location where it won't accidentally overwrite itself.
+    sub sp, .CODE_SIZE
+    mov cx, .CODE_SIZE
+    mov si, .CODE
+    mov di, sp
+    rep movsb
+
+    ; This starts executing at the beginning of the wstring below.
+    jmp sp
+
+begin_wstring .CODE_SIZE, .CODE
     ; Save TSR handler ID in resident global
     mov [multiplex_ax.id], al
     mov byte [multiplex_ax.function], 0
@@ -400,6 +403,7 @@ begin_wstring
         rep movsb
         ret
 end_wstring
+
 
 
 ;-------------------------------------------------------------------------------

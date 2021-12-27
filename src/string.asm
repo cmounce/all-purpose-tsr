@@ -6,15 +6,28 @@
 ; Macros
 ;-------------------------------------------------------------------------------
 
-; Prepend a wstring length header to arbitrary assembly. Usage:
+; Prepend a wstring length header to arbitrary assembly.
+; Example usage:
+;
 ;       foo:
-;       begin_wstring
+;       begin_wstring .size, .content
 ;           ; Arbitrary assembly...
 ;       end_wstring
-; In the above example, foo points to a wstring containing the assembled bytes
-; of the code between the delimiters.
-%macro begin_wstring 0
+;
+; This example defines the following values:
+;   - foo points to a wstring containing the assembled bytes
+;   - foo.size is an integer constant that is the length of the string
+;   - foo.content points to the raw bytes inside the wstring
+; Note that these labels are optional. You could omit .size and .content from
+; the above example, and foo would still point to a valid wstring.
+%macro begin_wstring 0-2
     %push fragment
+    %if %0 >= 1
+        %1 equ %$fragment_size
+    %endif
+    %if %0 >= 2
+        %2 equ %$fragment_start
+    %endif
     dw %$fragment_size
     %$fragment_start:
 %endmacro
