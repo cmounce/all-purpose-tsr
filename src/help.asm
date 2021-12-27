@@ -5,7 +5,7 @@ section .data
 
 top_level_help:
 begin_wstring
-    db `All-Purpose TSR -- prototype\r\n`
+    db `All-Purpose TSR (prototype, compiled `, __?UTC_DATE?__, `)\r\n`
     db `\r\n`
     db `Subcommands:\r\n`
     db `  install    Install TSR\r\n`
