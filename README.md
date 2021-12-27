@@ -1,4 +1,4 @@
-# text-mode-initializer
+# All-Purpose TSR
 A DOS TSR that changes the font, palette, and toggles high-intensity colors,
 all in one command.
 
