@@ -139,9 +139,6 @@ concat_video_data_wstring:
 ; Internal helpers and code fragments
 ;-------------------------------------------------------------------------------
 
-
-
-
 ; Set text-mode palette to the given 16 color palette.
 ;
 ; Takes a pointer DS:SI to palette data.

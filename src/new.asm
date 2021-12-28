@@ -94,31 +94,21 @@ build_new_bundle:
         pop di
         next_wstring di
 
-        ; Open palette file
-        mov dx, [parsed_options.palette]
-        call dos_open_existing_file
-        begin_if c
-            mov dx, [parsed_options.palette]
-            die EXIT_ERROR, "Couldn't open ", dx
-        end_if
-        mov bx, ax  ; BX = handle
-
-        ; Read palette data
+        ; Read palette file into the buffer
+        mov si, [parsed_options.palette]
         mov cx, 48 + 1          ; Read extra byte to detect too-large palettes
-        call read_wstring_from_handle
+        mov dx, si              ; DX = path to palette file
+        call read_wstring_from_path
         begin_if c
-            die EXIT_ERROR, "Error reading palette"
+            die EXIT_ERROR, "Error reading %s", si
         end_if
 
-        ; Check palette size
-        ; TODO: Have a central "validate this wstring"
-        cmp ax, 48
-        begin_if ne
-            die EXIT_BAD_ARGS, "Invalid palette file"
+        ; Validate palette data
+        mov si, di
+        call validate_palette_wstring
+        begin_if c
+            die EXIT_ERROR, "Invalid palette: %s", word [parsed_options.palette]
         end_if
-
-        ; Close file handle BX
-        call dos_close_file
 
         next_wstring di
     end_if
@@ -131,6 +121,37 @@ build_new_bundle:
 
     pop si
     pop di
+    pop bx
+    ret
+
+
+; Open a file and read its contents into a wstring
+; CX = maximum bytes to read
+; DX = wstring containing a path to a file
+; DI = location to write the result
+; Sets CF on failure.
+read_wstring_from_path:
+    push bx
+
+    ; Open file and set BX = handle
+    push cx                     ; Don't overwrite our argument CX
+    call dos_open_existing_file
+    pop cx
+    jc .ret                     ; Open failed: forward CF to caller
+    mov bx, ax
+
+    ; Read CX bytes from handle
+    call read_wstring_from_handle
+    begin_if c
+        ; Read failed
+        call dos_close_file     ; Attempt to clean up, but make sure
+        stc                     ; we still return failure.
+    else
+        ; Read succeeded: clean up
+        call dos_close_file
+    end_if
+
+    .ret:
     pop bx
     ret
 
