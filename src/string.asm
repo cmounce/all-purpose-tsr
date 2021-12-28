@@ -102,6 +102,22 @@ concat_wstring:
     ret
 
 
+; Copies a wstring from SI to DI.
+copy_wstring:
+    push di
+    push si
+
+    mov cx, [si]
+    mov [di], cx
+    add si, 2
+    add di, 2
+    rep movsb
+
+    pop si
+    pop di
+    ret
+
+
 ; Performs a case-sensitive comparison of SI and DI.
 ;
 ; Sets ZF = 0 if the two strings are equal.

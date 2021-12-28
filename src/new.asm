@@ -81,20 +81,16 @@ build_new_bundle:
 
     mov di, global_buffer
 
+    ; Add palette to the buffer, if specified
     mov dx, [parsed_options.palette]
     cmp dx, 0
     begin_if ne
-        ; TODO: Make a proper string-copy routine
-        mov cx, [bundle_keys.palette]           ; CX = size
-        mov [di], cx                            ; Write string header
-        push di
-        add di, 2                               ; DI = contents of string
-        lea si, [bundle_keys.palette + 2]       ; SI = "PALETTE" raw bytes
-        rep movsb
-        pop di
+        ; Copy key "PALETTE" to buffer
+        mov si, bundle_keys.palette
+        call copy_wstring
         next_wstring di
 
-        ; Read palette file into the buffer
+        ; Copy palette data to buffer
         mov si, [parsed_options.palette]
         mov cx, 48 + 1          ; Read extra byte to detect too-large palettes
         mov dx, si              ; DX = path to palette file
@@ -109,7 +105,33 @@ build_new_bundle:
         begin_if c
             die EXIT_ERROR, "Invalid palette: %s", word [parsed_options.palette]
         end_if
+        next_wstring di
+    end_if
 
+    ; Add font to the buffer, if specified
+    mov dx, [parsed_options.font]
+    cmp dx, 0
+    begin_if ne
+        ; Copy key "FONT" to buffer
+        mov si, bundle_keys.font
+        call copy_wstring
+        next_wstring di
+
+        ; Copy font data to buffer
+        mov si, [parsed_options.font]
+        mov cx, 32*256 + 1      ; Max font size is at 32 bytes/character
+        mov dx, si
+        call read_wstring_from_path
+        begin_if c
+            die EXIT_ERROR, "Error reading %s", si
+        end_if
+
+        ; Validate font data
+        mov si, di
+        call validate_font_wstring
+        begin_if c
+            die EXIT_ERROR, "Invalid font: %s", word [parsed_options.palette]
+        end_if
         next_wstring di
     end_if
 

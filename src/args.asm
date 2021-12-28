@@ -43,6 +43,7 @@ arg_flags:
 
 ; Define some key-value options
 arg_options:
+    .font:      db_wstring "/f"
     .output:    db_wstring "/o"
     .palette:   db_wstring "/p"
 
@@ -70,6 +71,7 @@ parsed_flags:
 
 ; Pointers to wstrings representing option values
 parsed_options:
+    .font:      resw 1
     .output:    resw 1
     .palette:   resw 1
 
@@ -300,9 +302,14 @@ parse_option:
     je .failure         ; Not enough tokens (1)
 
     ; Compare SI against each of the option strings
-    mov di, arg_options.output
+    mov di, arg_options.font
     call icmp_wstring
     begin_if e
+        mov [parsed_options.font], bx
+    else
+    mov di, arg_options.output
+    call icmp_wstring
+    if e
         mov [parsed_options.output], bx
     else
     mov di, arg_options.palette
