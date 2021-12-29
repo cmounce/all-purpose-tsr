@@ -46,7 +46,7 @@ show_help:
     mov dx, top_level_help
 
     ; If we have a more specific help message, set it
-    mov ax, [subcommand_arg]
+    mov ax, [parsed_subcommand]
     cmp ax, subcommands.install
     begin_if e
         mov dx, install_help

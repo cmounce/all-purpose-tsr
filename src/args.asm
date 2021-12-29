@@ -44,6 +44,7 @@ arg_flags:
 ; Define some key-value options
 arg_options:
     .font:      db_wstring "/f"
+    .font2:     db_wstring "/f2"
     .output:    db_wstring "/o"
     .palette:   db_wstring "/p"
 
@@ -62,7 +63,7 @@ arg_tokens:
     resb MAX_TOKENS * 3 + 2
 
 ; Pointer to a wstring from the subcommands list, e.g., subcommands.install
-subcommand_arg:
+parsed_subcommand:
     resw 1
 
 ; Booleans representing flags that are present/absent
@@ -72,6 +73,7 @@ parsed_flags:
 ; Pointers to wstrings representing option values
 parsed_options:
     .font:      resw 1
+    .font2:     resw 1
     .output:    resw 1
     .palette:   resw 1
 
@@ -193,8 +195,8 @@ is_token_separator:
 
 ; Tries to consume the token in SI as a subcommand.
 ;
-; On success: sets subcommand_arg and consumes the token, advancing SI.
-; On failure: leaves subcommand_arg untouched (should be zero).
+; On success: sets parsed_subcommand and consumes the token, advancing SI.
+; On failure: leaves parsed_subcommand untouched (should be zero).
 parse_subcommand:
     push di
 
@@ -214,7 +216,7 @@ parse_subcommand:
     jmp .ret
 
     .found:
-    mov [subcommand_arg], di        ; SI is a valid subcommand. Record it and
+    mov [parsed_subcommand], di     ; SI is a valid subcommand. Record it and
     next_wstring si                 ; advance to the next token.
 
     .ret:
@@ -306,6 +308,11 @@ parse_option:
     call icmp_wstring
     begin_if e
         mov [parsed_options.font], bx
+    else
+    mov di, arg_options.font2
+    call icmp_wstring
+    if e
+        mov [parsed_options.font2], bx
     else
     mov di, arg_options.output
     call icmp_wstring

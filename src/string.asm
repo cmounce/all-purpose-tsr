@@ -120,7 +120,7 @@ copy_wstring:
 
 ; Performs a case-sensitive comparison of SI and DI.
 ;
-; Sets ZF = 0 if the two strings are equal.
+; Sets ZF if the two strings are equal.
 cmp_wstring:
     push di
     push si
@@ -141,7 +141,7 @@ cmp_wstring:
 
 ; Performs a case-insensitive comparison of SI and DI.
 ;
-; Sets ZF = 0 if the two strings are equal.
+; Sets ZF if the two strings are equal.
 icmp_wstring:
     push di
     push si
@@ -149,7 +149,7 @@ icmp_wstring:
     ; Make sure the two strings are the same size
     mov cx, [si]
     cmp cx, [di]    ; Compare the two sizes,
-    jne .ret        ; returning ZF = non-zero if they are different
+    jne .ret        ; returning ZF = 0 if they are different
 
     ; Advance to the contents of each string
     add si, 2
@@ -164,10 +164,10 @@ icmp_wstring:
         inc di                      ; and lower-case it
         call tolower_accumulator
         cmp al, ah                  ; Compare the two characters,
-        jne .ret                    ; returning ZF = non-zero if different.
+        jne .ret                    ; returning ZF = 0 if different.
         loop .loop
 
-    ; If the above loop finishes, then our final comparison set ZF = 0,
+    ; If the above loop finishes, then our final comparison set ZF = 1,
     ; which we reuse as our return value when we return below.
 
     .ret:

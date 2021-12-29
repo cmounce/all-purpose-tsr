@@ -58,7 +58,7 @@ main:
     end_if
 
     ; Switch based on the parsed subcommand
-    mov ax, [subcommand_arg]
+    mov ax, [parsed_subcommand]
     cmp ax, subcommands.install
     begin_if e
         jmp install_tsr
