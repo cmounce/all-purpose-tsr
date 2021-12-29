@@ -130,7 +130,40 @@ build_new_bundle:
         mov si, di
         call validate_font_wstring
         begin_if c
-            die EXIT_ERROR, "Invalid font: %s", word [parsed_options.palette]
+            die EXIT_ERROR, "Invalid font: %s", word [parsed_options.font]
+        end_if
+        next_wstring di
+    end_if
+
+    ; Add secondary font to the buffer, if specified
+    mov dx, [parsed_options.font2]
+    cmp dx, 0
+    begin_if ne
+        ; Verify that a primary font was specified
+        cmp word [parsed_options.font], 0
+        begin_if e
+            die EXIT_ERROR, "Can't use /F2 without /F"
+        end_if
+
+        ; Copy key "FONT2" to buffer
+        mov si, bundle_keys.font2
+        call copy_wstring
+        next_wstring di
+
+        ; Copy font data to buffer
+        mov si, [parsed_options.font2]
+        mov cx, 32*256 + 1      ; Max font size is at 32 bytes/character
+        mov dx, si
+        call read_wstring_from_path
+        begin_if c
+            die EXIT_ERROR, "Error reading %s", si
+        end_if
+
+        ; Validate font data
+        mov si, di
+        call validate_font_wstring
+        begin_if c
+            die EXIT_ERROR, "Invalid font: %s", word [parsed_options.font2]
         end_if
         next_wstring di
     end_if
