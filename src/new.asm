@@ -144,6 +144,26 @@ build_new_bundle:
         next_wstring di
     end_if
 
+    ; Set blink mode
+    mov dx, [parsed_options.blink]
+    cmp dx, 0
+    begin_if ne
+        ; Copy key "BLINK" to buffer
+        mov si, bundle_keys.blink
+        call copy_wstring
+        next_wstring di
+
+        ; Write boolean to buffer
+        mov si, [parsed_options.blink]
+        call parse_blink_mode
+        begin_if c
+            die EXIT_BAD_ARGS, "/B must be either ON or OFF"
+        end_if
+        mov word [di], 0            ; Write header for empty wstring
+        call concat_byte_wstring    ; Append boolean byte
+        next_wstring di
+    end_if
+
     ; Terminate wstring list
     mov word [di], 0
 
@@ -235,4 +255,31 @@ read_wstring_from_handle:
 
     ; Return successful.
     ; We don't need `clc` because CF should still be clear from the DOS call.
+    ret
+
+
+; Translates a blink-mode string into a boolean value.
+;
+; SI = blink-mode wstring ("off" or "on")
+; Returns AL = 0 or 1.
+; Sets CF on failure.
+parse_blink_mode:
+    push di
+
+    mov di, arg_option_values.off
+    call icmp_wstring
+    begin_if e
+        mov al, 0
+    else
+    mov di, arg_option_values.on
+    call icmp_wstring
+    if e
+        mov al, 1
+    else
+        stc             ; Neither "on" nor "off": return an error
+        jmp .ret
+    end_if
+
+    .ret:
+    pop di
     ret

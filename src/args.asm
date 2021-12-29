@@ -318,7 +318,6 @@ parse_option:
     call icmp_wstring
     begin_if e
         mov [parsed_options.blink], bx
-        call validate_blink_value
     else
     mov di, arg_options.font
     call icmp_wstring
@@ -356,28 +355,3 @@ parse_option:
     .failure:
     stc
     jmp .ret
-
-
-; Make sure the parsed value for /b is either "on" or "off"
-validate_blink_value:
-    push di
-    push si
-
-    ; Is the value "on"?
-    mov si, [parsed_options.blink]
-    mov di, arg_option_values.on
-    call icmp_wstring
-    je .ret
-
-    ; Is the value "off"?
-    mov di, arg_option_values.off
-    call icmp_wstring
-    je .ret
-
-    ; Value is neither
-    die EXIT_BAD_ARGS, "/B must be either ON or OFF"
-
-    .ret:
-    pop si
-    pop di
-    ret
