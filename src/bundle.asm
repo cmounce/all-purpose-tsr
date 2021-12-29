@@ -99,18 +99,26 @@ parse_bundled_data:
         jc .failure
     end_if
 
-    ; Font
+    ; Fonts
     mov si, [parsed_bundle.font]
     cmp si, 0
     begin_if ne
+        ; There is a primary font: validate it
         call validate_font_wstring
         jc .failure
-    end_if
-    mov si, [parsed_bundle.font2]
-    cmp si, 0
-    begin_if ne
-        call validate_font_wstring
-        jc .failure
+
+        ; Check for a secondary font
+        mov si, [parsed_bundle.font2]
+        cmp si, 0
+        begin_if ne
+            call validate_font_wstring
+            jc .failure
+        end_if
+    else
+        ; There isn't a primary font.
+        ; Secondary fonts are only allowed if there's a primary.
+        cmp word [parsed_bundle.font2], 0
+        jne .failure
     end_if
 
     ; Blink flag
