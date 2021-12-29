@@ -42,11 +42,18 @@ preview_mode:
 
 ; Reset video mode
 reset_video:
+    push bx
+
     ; TODO: Get the original video mode and store it somewhere, so we can
     ; return to the exact same settings (resolution, 8-vs-9 dot, etc)?
     ; Probably just a call to int 10, AH=1B
-    mov ax, 0003h
+    mov ax, 1202h   ; Set 640x400 resolution
+    mov bl, 30h
     int 10h
+    mov ax, 0003h   ; Set 80x25 characters, 16 colors
+    int 10h
+
+    pop bx
     ret
 
 
@@ -80,6 +87,46 @@ concat_video_code_wstring:
     begin_if ne
         mov si, font2_code
         call concat_wstring
+    end_if
+
+    ; Set scanlines according to font size
+    cmp [parsed_bundle.font], word 0
+    begin_if ne
+        ; CH = height of font in pixels
+        mov si, [parsed_bundle.font]
+        mov cx, [si]
+
+        ; If there are two fonts, set CH = max height
+        cmp word [parsed_bundle.font2], 0
+        begin_if ne
+            mov si, [parsed_bundle.font2]   ; AH = height of font2
+            mov ax, [si]
+            cmp ah, ch                      ; CH = max(AH, CH)
+            begin_if a
+                mov ch, ah
+            end_if
+        end_if
+
+        ; SI = scanline code to use
+        xor si, si
+        cmp ch, 8
+        begin_if be
+            mov si, scan_lines_200_code
+        else
+        cmp ch, 14
+        if be
+            mov si, scan_lines_350_code
+        else
+        cmp ch, 16
+        if be
+            mov si, scan_lines_400_code
+        end_if
+
+        ; Append scanline code
+        cmp si, 0
+        begin_if ne
+            call concat_wstring
+        end_if
     end_if
 
     ; Append blink-vs-intensity code
@@ -248,6 +295,39 @@ begin_wstring
     pop es
     pop bx
     pop bp
+end_wstring
+
+
+; Set vertical resolution to 200 lines (8 lines/char)
+scan_lines_200_code:
+begin_wstring
+    push bx
+    mov ax, 1200h
+    mov bl, 30h
+    int 10h
+    pop bx
+end_wstring
+
+
+; Set vertical resolution to 350 lines (14 lines/char)
+scan_lines_350_code:
+begin_wstring
+    push bx
+    mov ax, 1201h
+    mov bl, 30h
+    int 10h
+    pop bx
+end_wstring
+
+
+; Set vertical resolution to 400 lines (16 lines/char)
+scan_lines_400_code:
+begin_wstring
+    push bx
+    mov ax, 1202h
+    mov bl, 30h
+    int 10h
+    pop bx
 end_wstring
 
 
