@@ -118,20 +118,8 @@ build_new_bundle:
         next_wstring di
 
         ; Copy font data to buffer
-        mov si, [parsed_options.font]
-        mov cx, 32*256 + 1      ; Max font size is at 32 bytes/character
-        mov dx, si
-        call read_wstring_from_path
-        begin_if c
-            die EXIT_ERROR, "Error reading %s", si
-        end_if
-
-        ; Validate font data
-        mov si, di
-        call validate_font_wstring
-        begin_if c
-            die EXIT_ERROR, "Invalid font: %s", word [parsed_options.font]
-        end_if
+        mov dx, [parsed_options.font]
+        call read_font_from_path
         next_wstring di
     end_if
 
@@ -151,20 +139,8 @@ build_new_bundle:
         next_wstring di
 
         ; Copy font data to buffer
-        mov si, [parsed_options.font2]
-        mov cx, 32*256 + 1      ; Max font size is at 32 bytes/character
-        mov dx, si
-        call read_wstring_from_path
-        begin_if c
-            die EXIT_ERROR, "Error reading %s", si
-        end_if
-
-        ; Validate font data
-        mov si, di
-        call validate_font_wstring
-        begin_if c
-            die EXIT_ERROR, "Invalid font: %s", word [parsed_options.font2]
-        end_if
+        mov dx, [parsed_options.font2]
+        call read_font_from_path
         next_wstring di
     end_if
 
@@ -180,7 +156,38 @@ build_new_bundle:
     ret
 
 
+; Read a font file into memory as a wstring
+;
+; DX = path to font file
+; DI = location to write font data
+read_font_from_path:
+    push bx
+    push si
+
+    ; Save path so we can reference it multiple times
+    mov bx, dx
+
+    ; Read font data
+    mov cx, 32*256 + 1      ; Max font size is at 32 bytes/character
+    call read_wstring_from_path
+    begin_if c
+        die EXIT_ERROR, "Error reading %s", bx
+    end_if
+
+    ; Validate font data
+    mov si, di
+    call validate_font_wstring
+    begin_if c
+        die EXIT_ERROR, "Invalid font: %s", bx
+    end_if
+
+    pop si
+    pop bx
+    ret
+
+
 ; Open a file and read its contents into a wstring
+;
 ; CX = maximum bytes to read
 ; DX = wstring containing a path to a file
 ; DI = location to write the result
