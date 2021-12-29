@@ -41,12 +41,21 @@ subcommands:
 arg_flags:
     .help:      db_wstring "/?"
 
+
 ; Define some key-value options
 arg_options:
+    .blink:     db_wstring "/b"
     .font:      db_wstring "/f"
     .font2:     db_wstring "/f2"
     .output:    db_wstring "/o"
     .palette:   db_wstring "/p"
+
+
+; Non-filename values for certain options
+arg_option_values:
+    ; Blink value
+    .off:   db_wstring "off"
+    .on:    db_wstring "on"
 
 
 ;-------------------------------------------------------------------------------
@@ -72,6 +81,7 @@ parsed_flags:
 
 ; Pointers to wstrings representing option values
 parsed_options:
+    .blink:     resw 1
     .font:      resw 1
     .font2:     resw 1
     .output:    resw 1
@@ -304,9 +314,15 @@ parse_option:
     je .failure         ; Not enough tokens (1)
 
     ; Compare SI against each of the option strings
-    mov di, arg_options.font
+    mov di, arg_options.blink
     call icmp_wstring
     begin_if e
+        mov [parsed_options.blink], bx
+        call validate_blink_value
+    else
+    mov di, arg_options.font
+    call icmp_wstring
+    if e
         mov [parsed_options.font], bx
     else
     mov di, arg_options.font2
@@ -340,3 +356,28 @@ parse_option:
     .failure:
     stc
     jmp .ret
+
+
+; Make sure the parsed value for /b is either "on" or "off"
+validate_blink_value:
+    push di
+    push si
+
+    ; Is the value "on"?
+    mov si, [parsed_options.blink]
+    mov di, arg_option_values.on
+    call icmp_wstring
+    je .ret
+
+    ; Is the value "off"?
+    mov di, arg_option_values.off
+    call icmp_wstring
+    je .ret
+
+    ; Value is neither
+    die EXIT_BAD_ARGS, "/B must be either ON or OFF"
+
+    .ret:
+    pop si
+    pop di
+    ret
