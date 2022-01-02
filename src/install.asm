@@ -414,6 +414,16 @@ section .text
 ; Code fragments for int 10h (video) handler
 int_10h_handler_prefix:
 begin_wstring
+    ; Silently ignore attempts to change vertical resolution
+    cmp ah, 12h
+    begin_if e
+        cmp bl, 30h
+        begin_if e
+            mov al, 12h     ; Return success
+            iret
+        end_if
+    end_if
+
     ; Make sure that this call is changing the video mode
     cmp ah, 0
     je .set_video_mode
