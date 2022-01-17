@@ -5,6 +5,7 @@ import struct
 DATA_HEADER = b" START OF DATA:"
 PALETTE = b"PALETTE"
 FONT = b"FONT"
+FONT2 = b"FONT2"
 BLINK = b"BLINK"
 
 FALSE_BYTE = b"\x00"
@@ -24,6 +25,10 @@ parser.add_argument(
 parser.add_argument(
     "-f", "--font", type=argparse.FileType("rb"),
     help="font file to include"
+)
+parser.add_argument(
+    "-g", "--font2", type=argparse.FileType("rb"),
+    help="secondary font file to include"
 )
 parser.add_argument(
     "--blink", dest="blink", action="store_true",
@@ -48,17 +53,24 @@ if header_index == -1:
 program_code = com_data[:header_index]
 
 # Build config based on command-line options
+def read_font(name: str, f):
+    data = f.read()
+    font_len = len(data)
+    font_height = font_len // 256
+    if font_len % 256 != 0 or font_height < 1 or font_height > 32:
+        raise ValueError(f"{name} is not a valid font")
+    return data
 config = {}
 if args.palette:
     config[PALETTE] = args.palette.read()
     if len(config[PALETTE]) != 3*16:
         raise ValueError(f"{args.palette.name} is not a valid palette")
 if args.font:
-    config[FONT] = args.font.read()
-    font_len = len(config[FONT])
-    font_height = font_len // 256
-    if font_len % 256 != 0 or font_height < 1 or font_height > 32:
-        raise ValueError(f"{args.font.name} is not a valid font")
+    config[FONT] = read_font(args.font.name, args.font)
+if args.font2:
+    config[FONT2] = read_font(args.font2.name, args.font2)
+    if FONT not in config:
+        raise ValueError("font cannot be secondary without a primary")
 if args.blink is not None:
     config[BLINK] = TRUE_BYTE if args.blink else FALSE_BYTE
 
